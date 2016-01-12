@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+
+require "listen"
+require "net/scp"
+require "daemons"
+
+if ARGV.length != 4 || ARGV.first == "-h"
+	puts "#{$PROGRAM_NAME} [remote IP] [remote username] [local directory] [remote directory] [file extension]"
+	exit
+end
+
+@host = ARGV[0]
+@user = ARGV[1]
+listen_directory = ARGV[2]
+@remote_destination = ARGV[3]
+@extension = ARGV[4]
+
+# Make sure remote IP is an actual IPv4 address.
+unless @host.match /[1-9]{1,3}(\.[0-9]{1,3}){3}/
+	puts "\"#{@host}\" needs to be an IPv4 address."
+	exit
+end
+
+unless Dir.exist? listen_directory
+	puts "\"#{listen_directory}\" is not a directory or does not exist."
+	exit
+end
+
+# Start as daemon
+Daemons.daemonize
+
+# Send files to server.
+def upload files
+	files.each{|file| Net::SCP.upload!(@host , @user, file, @remote_destination)}
+end
+
+# Only allow files that match the given extension.
+def extension files
+	files.keep_if{|f| f[f.length-@extension..f.length] == @extension }
+end
+
+# Listen for filesystem events.
+listener = Listen.to(listen_directory) do |modified, added, removed|
+	upload(extension(added))
+end
+listener.start
+sleep
