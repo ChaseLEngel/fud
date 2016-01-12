@@ -4,7 +4,7 @@ require "listen"
 require "net/scp"
 require "daemons"
 
-if ARGV.length != 4 || ARGV.first == "-h"
+if ARGV.length != 5 || ARGV.first == "-h"
 	puts "#{$PROGRAM_NAME} [remote IP] [remote username] [local directory] [remote directory] [file extension]"
 	exit
 end
@@ -36,7 +36,7 @@ end
 
 # Only allow files that match the given extension.
 def extension files
-	files.keep_if{|f| f[f.length-@extension..f.length] == @extension }
+	files.keep_if{|f| f[f.length-@extension.length..f.length] == @extension }
 end
 
 # Listen for filesystem events.
